@@ -98,10 +98,3 @@ The parser auto-detects column names for:
 | Follow-up Q&A | ReAct loop on the report tab |
 | Reasoning transparency | Full node-by-node log visible in UI |
 
-## Key Talking Points (Interview)
-
-- *"The agent autonomously decides when to re-categorise based on anomaly density — that's the conditional edge in the LangGraph."*
-- *"Multi-step reasoning mirrors how a human analyst would approach this: ingest → understand → flag → analyse → report."*
-- *"Tool use keeps the LLM from hallucinating — it calls specialised functions for each task."*
-- *"The system is extensible — you could swap in a real-time CBA webhook to feed live transactions."*
-- *"The LLM is only invoked where it adds value: ambiguous categorisation and report generation. Everything else is deterministic Python."*
