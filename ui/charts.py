@@ -55,7 +55,7 @@ def spending_donut(by_category: dict[str, float]) -> go.Figure:
         textfont=dict(size=10),
         hovertemplate="<b>%{label}</b><br>$%{value:,.2f}<br>%{percent}<extra></extra>",
     ))
-    fig.update_layout(**_BASE_LAYOUT, title="Spending by Category", showlegend=False)
+    fig.update_layout(**{**_BASE_LAYOUT, "title": "Spending by Category", "showlegend": False})
     return fig
 
 

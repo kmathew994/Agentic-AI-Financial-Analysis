@@ -57,9 +57,9 @@ pip install -r requirements.txt
 ### 2. Configure API key
 
 ```bash
-cp .env.example .env
-# Edit .env and add your Anthropic API key:
-# ANTHROPIC_API_KEY=sk-ant-...
+# create a .env file in the project folder
+# Edit .env and add your Gemini API key:
+# GEMINI_API_KEY=...
 ```
 
 ### 3. Run
@@ -93,7 +93,7 @@ The parser auto-detects column names for:
 | Multi-step reasoning | 5-node LangGraph pipeline |
 | Tool use | 5 `@tool` functions (parse, categorise, detect, summarise, recommend) |
 | Conditional re-analysis | `should_reanalyse` edge loops back if anomaly count > 5 |
-| LLM fallback | Rule-based categoriser escalates to Claude when confidence < 0.7 |
+| LLM fallback | Rule-based categoriser escalates to Gemini when confidence < 0.7 |
 | Self-correction | CSV parser retries with BOM-stripped content on failure |
 | Follow-up Q&A | ReAct loop on the report tab |
 | Reasoning transparency | Full node-by-node log visible in UI |

@@ -176,7 +176,7 @@ def rule_categorise(description: str, amount: float) -> dict[str, Any]:
 
 def llm_categorise(description: str, amount: float, llm: Any) -> dict[str, Any]:
     """
-    Use the Claude LLM to categorise a transaction.
+    Use the LLM to categorise a transaction.
     Falls back to 'other' if parsing fails.
     """
     from langchain_core.messages import HumanMessage, SystemMessage
@@ -194,7 +194,7 @@ def llm_categorise(description: str, amount: float, llm: Any) -> dict[str, Any]:
     )
     try:
         resp = llm.invoke([system, HumanMessage(content=prompt)])
-        raw = resp.content.strip().lstrip("```json").rstrip("```").strip()
+        raw = resp.text.strip().lstrip("```json").rstrip("```").strip()
         result = json.loads(raw)
         if result.get("category") not in CATEGORIES:
             result["category"] = "other"

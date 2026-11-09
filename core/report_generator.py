@@ -1,13 +1,13 @@
 """
 Natural language report generator.
-Takes completed AgentState data and produces a structured markdown report via Claude.
+Takes completed AgentState data and produces a structured markdown report via the LLM (Gemini).
 """
 
 from __future__ import annotations
 
 from typing import Any
 
-from langchain_anthropic import ChatAnthropic
+from core.llm import get_llm
 from langchain_core.messages import HumanMessage, SystemMessage
 
 _SYSTEM = """You are a financial analyst AI for an Agentic Expense Intelligence platform.
@@ -67,7 +67,7 @@ def generate_report(
     transactions: list[dict[str, Any]],
     spending_summary: dict[str, Any],
     anomalies: list[dict[str, Any]],
-    model: str = "claude-sonnet-4-20250514",
+    model: str | None = None,
 ) -> str:
     """
     Generate a natural language financial report.
@@ -76,12 +76,12 @@ def generate_report(
         transactions: categorised transaction list
         spending_summary: output of calculate_spending_summary tool
         anomalies: output of detect_anomalies
-        model: Anthropic model name
+        model: unused; set LLM_MODEL in .env
 
     Returns:
         Markdown-formatted report string
     """
-    llm = ChatAnthropic(model=model, temperature=0.3)
+    llm = get_llm(temperature=0.3)
 
     dates = sorted(t["date"] for t in transactions if t.get("date"))
     date_range = f"{dates[0]} to {dates[-1]}" if dates else "Unknown period"
@@ -119,6 +119,6 @@ def generate_report(
             SystemMessage(content=_SYSTEM),
             HumanMessage(content=prompt),
         ])
-        return response.content
+        return response.text
     except Exception as e:
-        return f"# Report Generation Error\n\n{e}\n\nPlease check your ANTHROPIC_API_KEY."
+        return f"# Report Generation Error\n\n{e}\n\nPlease check your GEMINI_API_KEY."

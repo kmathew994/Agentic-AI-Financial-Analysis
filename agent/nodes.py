@@ -10,7 +10,7 @@ Node execution order:
 import json
 from typing import Any
 
-from langchain_anthropic import ChatAnthropic
+from core.llm import MODEL_NAME, get_llm
 from langchain_core.messages import HumanMessage, SystemMessage
 
 from agent.state import AgentState
@@ -23,8 +23,15 @@ from agent.tools import (
 )
 
 # ── Shared LLM instance ────────────────────────────────────────────────────────
-_llm = ChatAnthropic(model="claude-sonnet-4-20250514", temperature=0)
-_llm_with_tools = _llm.bind_tools([categorise_transaction])
+# Built on first use so the app can start before a key is configured.
+_llm_instance = None
+
+
+def _llm_get():
+    global _llm_instance
+    if _llm_instance is None:
+        _llm_instance = get_llm(temperature=0)
+    return _llm_instance
 
 
 def _log(state: AgentState, msg: str) -> list[str]:
@@ -112,8 +119,8 @@ def categorisation_node(state: AgentState) -> dict[str, Any]:
                 f"Amount: {'credit' if t['amount'] > 0 else 'debit'} ${abs(t['amount']):.2f}"
             )
             try:
-                resp = _llm.invoke([system, HumanMessage(content=prompt)])
-                raw = resp.content.strip().lstrip("```json").rstrip("```").strip()
+                resp = _llm_get().invoke([system, HumanMessage(content=prompt)])
+                raw = resp.text.strip().lstrip("```json").rstrip("```").strip()
                 llm_result = json.loads(raw)
                 # Update in categorised list
                 for i, c in enumerate(categorised):
@@ -130,6 +137,9 @@ def categorisation_node(state: AgentState) -> dict[str, Any]:
         "categorised_transactions": categorised,
         "agent_reasoning_log": log,
         "current_step": "detect_anomalies",
+        # Counts categorise passes. Routing functions can't write state in
+        # LangGraph, so the loop counter has to be returned from a node.
+        "iteration_count": state.get("iteration_count", 0) + 1,
     }
 
 
@@ -258,8 +268,8 @@ Keep total length around 600 words. Be direct, specific, and practical."""
 
 
 def report_generation_node(state: AgentState) -> dict[str, Any]:
-    """Generate a comprehensive natural language financial report using Claude."""
-    log = _log(state, f"→ Node: generate_report | Model: claude-sonnet-4-20250514")
+    """Generate a comprehensive natural language financial report using the LLM."""
+    log = _log(state, f"→ Node: generate_report | Model: {MODEL_NAME}")
 
     summary = state["spending_summary"]
     anomalies = state["anomalies"]
@@ -297,11 +307,11 @@ def report_generation_node(state: AgentState) -> dict[str, Any]:
     )
 
     try:
-        response = _llm.invoke([
+        response = _llm_get().invoke([
             SystemMessage(content=_REPORT_SYSTEM),
             HumanMessage(content=prompt),
         ])
-        report = response.content
+        report = response.text
         log.append(f"✓ Report generated — {len(report)} characters, 6 sections")
     except Exception as e:
         report = f"Report generation failed: {e}"
@@ -325,8 +335,7 @@ def should_reanalyse(state: AgentState) -> str:
     anomaly_count = len(state.get("anomalies", []))
     iteration = state.get("iteration_count", 0)
 
-    if anomaly_count > 5 and iteration < 1:
-        # Increment iteration counter to prevent infinite loops
-        state["iteration_count"] = iteration + 1  # type: ignore[index]
+    # iteration_count is 1 after the first categorise pass; allow one re-run.
+    if anomaly_count > 5 and iteration < 2:
         return "reanalyse"
     return "generate_report"

@@ -9,7 +9,7 @@ from pathlib import Path
 
 import streamlit as st
 from dotenv import load_dotenv
-from langchain_anthropic import ChatAnthropic
+from core.llm import MODEL_NAME, get_llm
 from langchain_core.messages import HumanMessage, SystemMessage
 
 load_dotenv()
@@ -77,7 +77,7 @@ with col_title:
     st.markdown(
         '<div style="font-size:18px;font-weight:700;letter-spacing:-0.5px">Agentic Expense Intelligence</div>'
         '<div style="font-size:10px;color:#475569;letter-spacing:0.1em;text-transform:uppercase">'
-        "LangGraph · Claude claude-sonnet-4-20250514 · Multi-Step Reasoning Pipeline</div>",
+        f"LangGraph · Gemini {MODEL_NAME} · Multi-Step Reasoning Pipeline</div>",
         unsafe_allow_html=True,
     )
 with col_status:
@@ -271,7 +271,7 @@ with tab_anomalies:
                     st.markdown("<br>", unsafe_allow_html=True)
                     if st.button("🤖 Explain", key=f"explain_{anomaly['id']}"):
                         with st.spinner("Analysing anomaly..."):
-                            llm = ChatAnthropic(model="claude-sonnet-4-20250514", temperature=0)
+                            llm = get_llm(temperature=0)
                             prompt = (
                                 f"Explain in 2–3 sentences why this bank transaction is flagged as anomalous:\n"
                                 f"Description: {anomaly['description']}\n"
@@ -283,7 +283,7 @@ with tab_anomalies:
                                 "Be specific, practical, and reference the statistical reason."
                             )
                             resp = llm.invoke([HumanMessage(content=prompt)])
-                            st.session_state.explain_results[anomaly["id"]] = resp.content
+                            st.session_state.explain_results[anomaly["id"]] = resp.text
 
                 if anomaly["id"] in st.session_state.explain_results:
                     st.markdown(
@@ -342,7 +342,7 @@ with tab_report:
             with st.spinner("Agent thinking..."):
                 summary = state.get("spending_summary", {})
                 anomalies = state.get("anomalies", [])
-                llm = ChatAnthropic(model="claude-sonnet-4-20250514", temperature=0.3)
+                llm = get_llm(temperature=0.3)
 
                 context = (
                     f"Income: ${summary.get('total_income', 0):,.2f}, "
@@ -365,6 +365,6 @@ with tab_report:
                     f'<div style="background:#00C89610;border:1px solid #00C89630;'
                     f'border-radius:8px;padding:14px;font-size:13px;color:#94A3B8;'
                     f'line-height:1.7;margin-top:12px">'
-                    f'<span style="color:#00C896">Agent: </span>{resp.content}</div>',
+                    f'<span style="color:#00C896">Agent: </span>{resp.text}</div>',
                     unsafe_allow_html=True,
                 )
